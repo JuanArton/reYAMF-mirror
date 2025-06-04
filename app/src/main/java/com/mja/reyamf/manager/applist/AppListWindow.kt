@@ -131,91 +131,91 @@ class AppListWindow :  LifecycleService() {
                 0.5F, 0.5F,
                 origWidth, origHeight,
                 this
-            )
-        }
+            ) {
+                lifecycleScope.launch {
+                    binding.pv.isVisible = true
 
-        lifecycleScope.launch {
-            binding.pv.isVisible = true
-
-            YAMFManagerProxy.getAppListAsync(object : IAppListCallback.Stub() {
-                override fun onAppListReceived(appList: MutableList<AppInfo>) {
-                    apps.addAll(appList)
-                }
-
-                override fun onAppListFinished() {
-                    lifecycleScope.launch(Dispatchers.Main) {
-
-                        val userIds = apps.map { it.userId }.distinct()
-
-                        val userNames = userIds.map { id -> apps.firstOrNull { it.userId == id }?.userName ?: "Unknown" }
-
-                        if (userIds.isNotEmpty()) {
-                            val selectedUserId = userIds[0]
-                            val selectedUserName = apps.firstOrNull { it.userId == selectedUserId }?.userName ?: "Unknown"
-
-                            binding.btnUser.text = selectedUserName
-
-                            showApps = apps.filter { it.userId == selectedUserId }
-                                .sortedBy {
-                                    it.activityInfo
-                                        .loadLabel(this@AppListWindow.packageManager).toString()
-                                        .lowercase(Locale.ROOT)
-                                }
-                                .toMutableList()
-
-                        } else {
-                            showApps.clear()
+                    YAMFManagerProxy.getAppListAsync(object : IAppListCallback.Stub() {
+                        override fun onAppListReceived(appList: MutableList<AppInfo>) {
+                            apps.addAll(appList)
                         }
 
-                        binding.btnUser.setOnClickListener {
-                            val themedContext = ContextThemeWrapper(this@AppListWindow, androidx.appcompat.R.style.Theme_AppCompat)
-                            PopupMenu(themedContext, binding.btnUser).apply {
-                                userNames.forEachIndexed { index, name ->
-                                    menu.add(name).setOnMenuItemClickListener {
-                                        val selectedUserId = userIds[index]
-                                        onSelectUser(selectedUserId)
-                                        true
+                        override fun onAppListFinished() {
+                            lifecycleScope.launch(Dispatchers.Main) {
+
+                                val userIds = apps.map { it.userId }.distinct()
+
+                                val userNames = userIds.map { id -> apps.firstOrNull { it.userId == id }?.userName ?: "Unknown" }
+
+                                if (userIds.isNotEmpty()) {
+                                    val selectedUserId = userIds[0]
+                                    val selectedUserName = apps.firstOrNull { it.userId == selectedUserId }?.userName ?: "Unknown"
+
+                                    binding.btnUser.text = selectedUserName
+
+                                    showApps = apps.filter { it.userId == selectedUserId }
+                                        .sortedBy {
+                                            it.activityInfo
+                                                .loadLabel(this@AppListWindow.packageManager).toString()
+                                                .lowercase(Locale.ROOT)
+                                        }
+                                        .toMutableList()
+
+                                } else {
+                                    showApps.clear()
+                                }
+
+                                binding.btnUser.setOnClickListener {
+                                    val themedContext = ContextThemeWrapper(this@AppListWindow, androidx.appcompat.R.style.Theme_AppCompat)
+                                    PopupMenu(themedContext, binding.btnUser).apply {
+                                        userNames.forEachIndexed { index, name ->
+                                            menu.add(name).setOnMenuItemClickListener {
+                                                val selectedUserId = userIds[index]
+                                                onSelectUser(selectedUserId)
+                                                true
+                                            }
+                                        }
+                                    }.show()
+                                }
+
+                                val clickListener: (AppInfo) -> Unit = {
+                                    animateScaleThenResize(
+                                        binding.cvParent,
+                                        1F, 1F,
+                                        0F, 0F,
+                                        0.5F, 0.5F,
+                                        0, 0,
+                                        this@AppListWindow
+                                    ) {
+                                        binding.root.visibility = View.GONE
+
+                                        YAMFManagerProxy.createWindowUserspace(it)
+                                        close()
                                     }
                                 }
-                            }.show()
-                        }
 
-                        val clickListener: (AppInfo) -> Unit = {
-                            animateScaleThenResize(
-                                binding.cvParent,
-                                1F, 1F,
-                                0F, 0F,
-                                0.5F, 0.5F,
-                                0, 0,
-                                this@AppListWindow
-                            ) {
-                                binding.root.visibility = View.GONE
+                                val longClickListener: (AppInfo) -> Unit = {
+                                    iReyamfRepository.insertAppInfo(it)
+                                    vibratePhone(this@AppListWindow)
+                                    Toast.makeText(
+                                        this@AppListWindow,
+                                        getString(R.string.app_added_to_sidebar),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
 
-                                YAMFManagerProxy.createWindowUserspace(it)
-                                close()
+                                binding.rv.layoutManager = GridLayoutManager(this@AppListWindow, 4)
+                                rvAdapter = AppListAdapter(clickListener, arrayListOf(), longClickListener)
+                                binding.rv.adapter = rvAdapter
+                                rvAdapter.setData(showApps)
+                                rvAdapter.notifyDataSetChanged()
+                                binding.pv.isVisible = false
+                                binding.etSearch.isEnabled = true
                             }
                         }
-
-                        val longClickListener: (AppInfo) -> Unit = {
-                            iReyamfRepository.insertAppInfo(it)
-                            vibratePhone(this@AppListWindow)
-                            Toast.makeText(
-                                this@AppListWindow,
-                                getString(R.string.app_added_to_sidebar),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                        binding.rv.layoutManager = GridLayoutManager(this@AppListWindow, 4)
-                        rvAdapter = AppListAdapter(clickListener, arrayListOf(), longClickListener)
-                        binding.rv.adapter = rvAdapter
-                        rvAdapter.setData(showApps)
-                        rvAdapter.notifyDataSetChanged()
-                        binding.pv.isVisible = false
-                        binding.etSearch.isEnabled = true
-                    }
+                    })
                 }
-            })
+            }
         }
     }
 

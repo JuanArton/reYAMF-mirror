@@ -7,5 +7,5 @@
       android:pathData="m124.86,39.9 l-60.02,60.02 0.2,0.2 -0.08,0.08 59.9,59.9 10.3,-10.3L85.34,99.98 135.14,50.18Z"
       android:strokeWidth="0"
       android:fillColor="@color/accentColor"
-      android:strokeColor="@android:color/system_accent1_50"/>
+      android:strokeColor="@color/accentColor"/>
 </vector>

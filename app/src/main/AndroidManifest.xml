@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools" >
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -21,17 +21,22 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Reyamf"
-        tools:targetApi="35">
+        tools:targetApi="35" >
+        <service
+            android:name=".manager.sidebar.SidebarService"
+            android:enabled="true"
+            android:exported="true" >
+        </service>
         <service
             android:name=".manager.services.Window"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
         <service
             android:name=".manager.applist.AppListWindow"
             android:enabled="true"
             android:exported="true" />
         <service
-            android:name=".manager.sidebar.SidebarService"
+            android:name=".manager.sidebar.SidebarMenuService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="specialUse" />
@@ -48,7 +53,7 @@
 
         <activity
             android:name=".manager.ui.main.MainActivity"
-            android:exported="true">
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -65,7 +70,7 @@
             android:exported="true"
             android:icon="@drawable/ic_picture_in_picture_alt_24"
             android:label="@string/new_window"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE" >
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -75,7 +80,7 @@
             android:exported="true"
             android:icon="@drawable/ic_picture_in_picture_alt_24"
             android:label="@string/enter_window"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE" >
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -85,7 +90,7 @@
             android:exported="true"
             android:icon="@drawable/ic_picture_in_picture_alt_24"
             android:label="@string/reset_all_window"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE" >
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -94,7 +99,7 @@
             android:name=".manager.services.AccessibilityService"
             android:exported="false"
             android:label="reYAMF Accessibility Service"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
@@ -107,7 +112,7 @@
         <receiver
             android:name=".manager.broadcastreceiver.BootReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>

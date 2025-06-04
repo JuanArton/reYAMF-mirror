@@ -162,55 +162,40 @@
                     android:layout_height="40dp"
                     android:background="?attr/colorSurface"
                     android:paddingHorizontal="6dp"
-                    android:weightSum="4"
+                    android:weightSum="3"
                     android:clipChildren="false"
                     android:clipToPadding="false"
+                    android:orientation="horizontal"
+                    android:gravity="center"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    tools:ignore="UnknownId">
+                    app:layout_constraintStart_toStartOf="parent">
 
                     <ImageButton
                         android:id="@+id/ib_close"
-                        android:layout_width="24dp"
-                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"
+                        android:layout_height="35dp"
                         android:layout_weight="1"
                         android:background="?android:attr/selectableItemBackground"
                         android:contentDescription="@string/close_desc"
-                        android:src="@drawable/ic_close_24"
+                        android:src="@drawable/ic_close"
                         android:visibility="invisible"
                         app:layout_constraintStart_toStartOf="parent" />
 
-
                     <ImageButton
-                        android:id="@+id/ib_minimize"
-                        android:layout_width="30dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:contentDescription="@string/minimize_desc"
-                        android:padding="4dp"
-                        android:src="@drawable/ic_minimize"
+                        android:id="@+id/ibSuper"
+                        android:layout_width="match_parent"
+                        android:layout_height="35dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="@string/super_description"
                         android:visibility="invisible"
-                        app:layout_constraintEnd_toStartOf="@+id/ib_back" />
-
-                    <ImageButton
-                        android:id="@+id/ib_fullscreen"
-                        android:layout_width="30dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:contentDescription="@string/fullscreen_desc"
-                        android:padding="4dp"
-                        android:src="@drawable/ic_maximize"
-                        android:visibility="invisible"
-                        app:layout_constraintEnd_toStartOf="@+id/ib_minimize"
-                        app:layout_constraintStart_toEndOf="@+id/ib_close" />
+                        android:src="@drawable/three_dot_horiz"
+                        android:layout_weight="1" />
 
                     <ImageButton
                         android:id="@+id/ib_back"
-                        android:layout_width="30dp"
-                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"
+                        android:layout_height="35dp"
                         android:layout_weight="1"
                         android:background="?android:attr/selectableItemBackground"
                         android:contentDescription="@string/back_desc"
@@ -220,16 +205,69 @@
                         app:layout_constraintEnd_toEndOf="parent" />
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/ibSuper"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:background="@android:color/transparent"
-                    android:foregroundGravity="center"
-                    android:src="@drawable/three_dot_horiz"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cvSuper"
+                    android:layout_width="180dp"
+                    android:layout_height="39dp"
+                    android:visibility="invisible"
+                    android:layout_marginBottom="1dp"
+                    android:paddingHorizontal="10dp"
+                    app:cardElevation="8dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent" />
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:strokeColor="@color/accentColor"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:weightSum="3">
+
+                        <ImageButton
+                            android:id="@+id/ib_minimize"
+                            android:layout_width="match_parent"
+                            android:layout_height="39dp"
+                            android:layout_weight="1"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:contentDescription="@string/minimize_desc"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_minimize"
+                            android:visibility="invisible"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <ImageButton
+                            android:id="@+id/ib_fullscreen"
+                            android:layout_width="match_parent"
+                            android:layout_height="39dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:contentDescription="@string/fullscreen_desc"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_maximize"
+                            android:visibility="invisible"
+                            app:layout_constraintEnd_toStartOf="@+id/ib_minimize" />
+
+                        <ImageButton
+                            android:id="@+id/ib_collapse"
+                            android:layout_width="match_parent"
+                            android:layout_height="39dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:contentDescription="@string/fullscreen_desc"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_collapse"
+                            android:visibility="invisible"
+                            app:layout_constraintEnd_toStartOf="@+id/ib_minimize" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
     </com.google.android.material.card.MaterialCardView>

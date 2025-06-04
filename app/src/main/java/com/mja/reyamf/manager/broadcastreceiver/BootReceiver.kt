@@ -8,7 +8,7 @@ import com.mja.reyamf.common.gson
 import com.mja.reyamf.common.model.Config
 import com.mja.reyamf.manager.services.YAMFManagerProxy
 import com.mja.reyamf.manager.sidebar.Action
-import com.mja.reyamf.manager.sidebar.SidebarService
+import com.mja.reyamf.manager.sidebar.SidebarMenuService
 
 class BootReceiver : BroadcastReceiver() {
 
@@ -19,7 +19,7 @@ class BootReceiver : BroadcastReceiver() {
             config = gson.fromJson(YAMFManagerProxy.configJson, Config::class.java)
 
             if (config.launchSideBarAtBoot) {
-                Intent(context, SidebarService::class.java).also {
+                Intent(context, SidebarMenuService::class.java).also {
                     it.action = Action.START.name
                     Log.d("reYAMF", "Starting the service in >=26 Mode from a BroadcastReceiver")
                     context.startForegroundService(it)

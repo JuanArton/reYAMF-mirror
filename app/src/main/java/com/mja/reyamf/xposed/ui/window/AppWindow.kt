@@ -294,6 +294,7 @@ class AppWindow(
             binding.cvappIcon.visibility = View.INVISIBLE
             animateAlpha(binding.ibClose, 1f, 0f)
             animateAlpha(binding.ibBack, 1f, 0f)
+            animateAlpha(binding.ibSuper, 1f, 0f)
             if (orientation == 0) {
                 animateAlpha(binding.rlBarControllerBottom, 1f, 0f)
             } else {
@@ -326,20 +327,45 @@ class AppWindow(
             }
         }
         binding.ibMinimize.setOnClickListener {
-            changeMini()
             binding.apply {
                 ibSuper.visibility = View.VISIBLE
+                cvSuper.visibility = View.INVISIBLE
                 ibMinimize.visibility = View.INVISIBLE
                 ibFullscreen.visibility = View.INVISIBLE
+                ibCollapse.visibility = View.INVISIBLE
+
+                animateScaleThenResize(
+                    cvSuper,
+                    1F, 1F,
+                    0F, 1F,
+                    0.5F, 0.5F,
+                    0, 39.dpToPx().toInt(),
+                    context
+                ) {
+                    changeMini()
+                }
             }
         }
 
-        binding.ibMinimize.setOnLongClickListener {
-            changeCollapsed()
+        binding.ibCollapse.setOnClickListener {
             binding.apply {
                 ibSuper.visibility = View.VISIBLE
+                cvSuper.visibility = View.INVISIBLE
+
                 ibMinimize.visibility = View.INVISIBLE
                 ibFullscreen.visibility = View.INVISIBLE
+                ibCollapse.visibility = View.INVISIBLE
+
+                animateScaleThenResize(
+                    cvSuper,
+                    1F, 1F,
+                    0F, 1F,
+                    0.5F, 0.5F,
+                    0, 39.dpToPx().toInt(),
+                    context
+                ) {
+                    changeCollapsed()
+                }
             }
             true
         }
@@ -347,8 +373,20 @@ class AppWindow(
         binding.ibSuper.setOnClickListener {
             binding.apply {
                 ibSuper.visibility = View.INVISIBLE
-                ibMinimize.visibility = View.VISIBLE
-                ibFullscreen.visibility = View.VISIBLE
+                cvSuper.visibility = View.VISIBLE
+
+                animateScaleThenResize(
+                    cvSuper,
+                    0F, 1F,
+                    1F, 1F,
+                    0.5F, 0.5F,
+                    150.dpToPx().toInt(), 39.dpToPx().toInt(),
+                    context
+                ) {
+                    ibMinimize.visibility = View.VISIBLE
+                    ibFullscreen.visibility = View.VISIBLE
+                    ibCollapse.visibility = View.VISIBLE
+                }
             }
         }
 
@@ -414,6 +452,7 @@ class AppWindow(
 
                     animateAlpha(binding.ibClose, 0f, 1f)
                     animateAlpha(binding.ibBack, 0f, 1f)
+                    animateAlpha(binding.ibSuper, 0f, 1f)
                     binding.cvParent.strokeWidth = 2.dpToPx().toInt()
                 }
 
@@ -735,6 +774,7 @@ class AppWindow(
 
                     animateAlpha(binding.ibClose, 0f, 1f)
                     animateAlpha(binding.ibBack, 0f, 1f)
+                    animateAlpha(binding.ibSuper, 0f, 1f)
                     if (orientation == 0) {
                         binding.rlBarControllerBottom.visibility = View.VISIBLE
                     } else {
@@ -753,6 +793,7 @@ class AppWindow(
 
         animateAlpha(binding.ibClose, 1f, 0f)
         animateAlpha(binding.ibBack, 1f, 0f)
+        animateAlpha(binding.ibSuper, 1f, 0f)
 
         CoroutineScope(Dispatchers.Main).launch {
             delay(200)

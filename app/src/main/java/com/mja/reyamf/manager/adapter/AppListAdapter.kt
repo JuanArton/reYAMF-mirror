@@ -44,49 +44,42 @@ class AppListAdapter (
 
     override fun getItemCount(): Int = appList.size
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val binding = ItemAppBinding.bind(itemView)
-        fun bind(appInfo: AppInfo){
-            binding.apply {
-                val label = getIconLabel(appInfo.activityInfo)
+        private var currentAppInfo: AppInfo? = null
 
-//                YAMFManagerProxy.getAppIcon(object : IAppIconCallback.Stub() {
-//                    override fun onResult(iconData: ByteArray?) {
-//                        CoroutineScope(Dispatchers.Main).launch {
-//                            if (iconData != null) {
-//                                val bitmap = BitmapFactory.decodeByteArray(iconData, 0, iconData.size)
-//                                ivIcon.setImageBitmap(bitmap)
-//                            } else {
-//                                ivIcon.setImageResource(R.drawable.work_icon)
-//                            }
-//                        }
-//                    }
-//                }, appInfo)
+        fun bind(appInfo: AppInfo) {
+            currentAppInfo = appInfo
 
-                val iconDrawable = try {
-                    binding.root.context.packageManager.getActivityIcon(appInfo.activityInfo.componentName)
+            binding.tvLabel.text = ""
+            binding.ivIcon.setImageDrawable(null)
+
+            binding.ll.setOnClickListener {
+                onClick(appInfo)
+            }
+
+            binding.ll.setOnLongClickListener {
+                onLongClick(appInfo)
+                true
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val pm = binding.root.context.packageManager
+                val icon = try {
+                    pm.getActivityIcon(appInfo.activityInfo.componentName)
                 } catch (e: PackageManager.NameNotFoundException) {
                     ContextCompat.getDrawable(binding.root.context, R.drawable.work_icon)
                 }
-                ivIcon.setImageDrawable(iconDrawable)
 
-                tvLabel.text = label
+                val label = appInfo.activityInfo.loadLabel(pm)
 
-                ll.setOnClickListener {
-                    onClick(appInfo)
-                }
-
-                ll.setOnLongClickListener {
-                    onLongClick(appInfo)
-                    true
+                launch(Dispatchers.Main) {
+                    if (currentAppInfo == appInfo) {
+                        binding.ivIcon.setImageDrawable(icon)
+                        binding.tvLabel.text = label
+                    }
                 }
             }
         }
-
-        fun getIconLabel(info: ActivityInfo): CharSequence {
-            val pm = binding.root.context.packageManager
-            return info.loadLabel(pm)
-        }
     }
-
 }

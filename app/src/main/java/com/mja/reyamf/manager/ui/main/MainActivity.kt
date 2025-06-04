@@ -18,7 +18,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.bumptech.glide.Glide
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
@@ -32,7 +31,7 @@ import com.mja.reyamf.databinding.ActivityMainBinding
 import com.mja.reyamf.manager.applist.AppListWindow
 import com.mja.reyamf.manager.services.YAMFManagerProxy
 import com.mja.reyamf.manager.sidebar.Action
-import com.mja.reyamf.manager.sidebar.SidebarService
+import com.mja.reyamf.manager.sidebar.SidebarMenuService
 import com.mja.reyamf.manager.ui.setting.SettingActivity
 import com.mja.reyamf.manager.utils.TipUtil
 import com.mja.reyamf.xposed.IOpenCountListener
@@ -218,7 +217,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchSidebar(action: String) {
-        Intent(this, SidebarService::class.java).also {
+        Intent(this, SidebarMenuService::class.java).also {
             it.action = action
             Log.d("reYAMF", "Starting the service in >=26 Mode from a BroadcastReceiver")
             this.startForegroundService(it)
