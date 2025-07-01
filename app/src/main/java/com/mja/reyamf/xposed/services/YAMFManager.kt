@@ -78,7 +78,7 @@ object YAMFManager : IYAMFManager.Stub() {
 
     private val windowList = mutableListOf<Int>()
     lateinit var config: Config
-    private val configFile = File("/data/system/reYAMF.json")
+    val configFile = File("/data/system/reYAMF.json")
     private var openWindowCount = 0
     private val iOpenCountListenerSet = mutableSetOf<IOpenCountListener>()
     lateinit var activityManagerService: Any
@@ -152,14 +152,6 @@ object YAMFManager : IYAMFManager.Stub() {
         ) { displayId ->
             addWindow(displayId)
             startCmd?.startAuto(displayId)
-        }
-    }
-
-    fun sideBarUpdateConfig(newConfig: String) {
-        config = gson.fromJson(newConfig, Config::class.java)
-        runMain {
-            configFile.writeText(newConfig)
-            Log.d(TAG, "updateConfig: $config")
         }
     }
 

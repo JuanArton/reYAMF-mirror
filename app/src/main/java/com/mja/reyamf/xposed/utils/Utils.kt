@@ -15,9 +15,6 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.IPackageManagerHidden
 import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.UserHandle
 import android.os.VibrationEffect
@@ -33,12 +30,13 @@ import com.github.kyuubiran.ezxhelper.utils.argTypes
 import com.github.kyuubiran.ezxhelper.utils.args
 import com.github.kyuubiran.ezxhelper.utils.invokeMethod
 import com.github.kyuubiran.ezxhelper.utils.newInstance
+import com.mja.reyamf.common.gson
 import com.mja.reyamf.common.model.StartCmd
 import com.mja.reyamf.common.onException
+import com.mja.reyamf.manager.services.YAMFManagerProxy
 import com.mja.reyamf.xposed.services.YAMFManager
 import de.robv.android.xposed.XposedBridge
-import net.bytebuddy.android.AndroidClassLoadingStrategy
-import java.io.File
+import com.mja.reyamf.common.model.Config as YAMFConfig
 
 fun log(tag: String, message: String) {
     XposedBridge.log("[$tag] $message")
@@ -182,7 +180,12 @@ fun animateResize(
         1.0f // fallback to normal scale if not found
     }
 
-    val adjustedDuration = (baseDuration * scale).toLong()
+    val config = try {
+        gson.fromJson(YAMFManagerProxy.configJson, YAMFConfig::class.java)
+    } catch (e: Exception) {
+        gson.fromJson(YAMFManager.configJson, YAMFConfig::class.java)
+    }
+    val adjustedDuration = (if (config.animationSpeed < 5100) config.animationSpeed else 300).toLong()
 
     val widthAnimator = ValueAnimator.ofInt(startWidth, endWidth).apply {
         addUpdateListener { animator ->
@@ -235,7 +238,12 @@ fun animateScaleThenResize(
         1.0f
     }
 
-    val adjustedDuration = (baseDuration * scale).toLong()
+    val config = try {
+        gson.fromJson(YAMFManagerProxy.configJson, YAMFConfig::class.java)
+    } catch (e: Exception) {
+        gson.fromJson(YAMFManager.configJson, YAMFConfig::class.java)
+    }
+    val adjustedDuration = (if (config.animationSpeed < 5100) config.animationSpeed else 300 * scale).toLong()
 
     val scaleAnimation = ScaleAnimation(
         startX, endX,
@@ -283,21 +291,3 @@ fun animateAlpha(view: View, startAlpha: Float, endAlpha: Float, onEnd: (() -> U
     view.startAnimation(animation1)
     if (endAlpha == 1F) view.visibility = View.VISIBLE else view.visibility = View.GONE
 }
-
-fun drawableToBitmap(drawable: Drawable): Bitmap {
-    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
-    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
-
-    val bitmap = Bitmap.createBitmap(
-        width,
-        height,
-        Bitmap.Config.ARGB_8888
-    )
-    val canvas = Canvas(bitmap)
-    drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
-    return bitmap
-}
-
-
-val byteBuddyStrategy = AndroidClassLoadingStrategy.Wrapping(File("/data/system/reYAMF").also { it.mkdirs() })

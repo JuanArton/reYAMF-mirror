@@ -77,7 +77,13 @@ class SettingActivity : AppCompatActivity() {
             sUseAppList.isChecked = preference.getBoolean("useAppList", true)
             sForceShowIME.isChecked = config.showForceShowIME
             sliderRounded.value = config.windowRoundedCorner.toFloat()
+            sliderAnimationSpeed.value = config.animationSpeed
             tvRoundedValue.text = "${config.windowRoundedCorner}"
+            tvAnimationSpeedValue.text = if (config.animationSpeed == 5100f){
+                getString(R.string.default_speed)
+            } else{
+                "${config.animationSpeed.toFloat()}"
+            }
 
             btnSurface.text = when (config.surfaceView) {
                 0 -> {
@@ -155,6 +161,20 @@ class SettingActivity : AppCompatActivity() {
                 override fun onStopTrackingTouch(slider: Slider) {
                     tvRoundedValue.text = "${slider.value.toInt()}"
                     config.windowRoundedCorner = slider.value.toInt()
+                    YAMFManagerProxy.updateConfig(gson.toJson(config))
+                }
+            })
+
+            sliderAnimationSpeed.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+                override fun onStartTrackingTouch(slider: Slider) {}
+
+                override fun onStopTrackingTouch(slider: Slider) {
+                    tvAnimationSpeedValue.text = if (slider.value == 5100f){
+                        getString(R.string.default_speed)
+                    } else{
+                        "${slider.value.toInt()}"
+                    }
+                    config.animationSpeed = slider.value
                     YAMFManagerProxy.updateConfig(gson.toJson(config))
                 }
             })

@@ -1,16 +1,14 @@
 package com.mja.reyamf.xposed.hook
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AndroidAppHelper
-import android.app.Application
 import android.app.PendingIntent
 import android.app.RemoteAction
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.UserHandle
-import android.util.Log
-import android.view.SurfaceControl
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -37,7 +35,9 @@ import com.github.kyuubiran.ezxhelper.utils.loadClassOrNull
 import com.github.kyuubiran.ezxhelper.utils.newInstance
 import com.github.kyuubiran.ezxhelper.utils.paramCount
 import com.mja.reyamf.R
+import com.mja.reyamf.xposed.services.YAMFManager
 import com.mja.reyamf.xposed.utils.log
+import com.mja.reyamf.xposed.utils.registerReceiver
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.XC_MethodHook
@@ -45,8 +45,6 @@ import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.lang.reflect.Proxy
-import com.mja.reyamf.xposed.utils.registerReceiver
-import com.mja.reyamf.xposed.services.YAMFManager
 
 
 class HookLauncher : IXposedHookLoadPackage, IXposedHookZygoteInit {
@@ -61,6 +59,8 @@ class HookLauncher : IXposedHookLoadPackage, IXposedHookZygoteInit {
         const val EXTRA_HOOK_TRANSIENT_TASKBAR = "hookTransientTaskbar"
     }
 
+    private var isRegistered = false
+
     override fun initZygote(startupParam: IXposedHookZygoteInit.StartupParam) {
         EzXHelperInit.initZygote(startupParam)
     }
@@ -69,34 +69,39 @@ class HookLauncher : IXposedHookLoadPackage, IXposedHookZygoteInit {
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         EzXHelperInit.initHandleLoadPackage(lpparam)
         loadClassOrNull("com.android.launcher3.Launcher") ?: return
-        Application::class.java.findMethod {
+        findMethod("com.android.launcher3.Launcher") {
             name == "onCreate"
         }.hookAfter {
-            val application = it.thisObject as Application
-            application.registerReceiver(ACTION_RECEIVE_LAUNCHER_CONFIG) { _, intent ->
-                val hookRecent = intent.getBooleanExtra(EXTRA_HOOK_RECENT, false)
-                val hookTaskbar = intent.getBooleanExtra(EXTRA_HOOK_TASKBAR, false)
-                val hookPopup = intent.getBooleanExtra(EXTRA_HOOK_POPUP, false)
-                val hookTransientTaskbar =
-                    intent.getBooleanExtra(EXTRA_HOOK_TRANSIENT_TASKBAR, false)
-                log(
-                    TAG,
-                    "receive config hookRecent=$hookRecent hookTaskbar=$hookTaskbar hookPopup=$hookPopup hookTranslucentTaskbar=$hookTransientTaskbar"
-                )
-                if (hookRecent) runCatching { hookRecent(lpparam) }.onFailure { e ->
-                    log(TAG, "hook recent failed", e) }
-                if (hookTaskbar) runCatching { hookTaskbar(lpparam) }.onFailure { e ->
-                    log(TAG, "hook taskbar failed", e) }
-                if (hookPopup) runCatching { hookPopup(lpparam) }.onFailure { e ->
-                    log(TAG, "hook popup failed", e) }
-                if (hookTransientTaskbar) runCatching { hookTransientTaskbar(lpparam) }.onFailure { e ->
-                    log(TAG, "hook transient failed", e) }
-                application.unregisterReceiver(this)
+            if (!isRegistered) {
+                val activity = it.thisObject as Activity
+                val application = activity.application
+                application.registerReceiver(ACTION_RECEIVE_LAUNCHER_CONFIG) { _, intent ->
+                    val hookRecent = intent.getBooleanExtra(EXTRA_HOOK_RECENT, false)
+                    val hookTaskbar = intent.getBooleanExtra(EXTRA_HOOK_TASKBAR, false)
+                    val hookPopup = intent.getBooleanExtra(EXTRA_HOOK_POPUP, false)
+                    val hookTransientTaskbar =
+                        intent.getBooleanExtra(EXTRA_HOOK_TRANSIENT_TASKBAR, false)
+                    log(
+                        TAG,
+                        "receive config hookRecent=$hookRecent hookTaskbar=$hookTaskbar hookPopup=$hookPopup hookTranslucentTaskbar=$hookTransientTaskbar"
+                    )
+                    if (hookRecent) runCatching { hookRecent(lpparam) }.onFailure { e ->
+                        log(TAG, "hook recent failed", e) }
+                    if (hookTaskbar) runCatching { hookTaskbar(lpparam) }.onFailure { e ->
+                        log(TAG, "hook taskbar failed", e) }
+                    if (hookPopup) runCatching { hookPopup(lpparam) }.onFailure { e ->
+                        log(TAG, "hook popup failed", e) }
+                    if (hookTransientTaskbar) runCatching { hookTransientTaskbar(lpparam) }.onFailure { e ->
+                        log(TAG, "hook transient failed", e) }
+                    application.unregisterReceiver(this)
+                }
+                application.sendBroadcast(Intent(YAMFManager.ACTION_GET_LAUNCHER_CONFIG).apply {
+                    `package` = "android"
+                    putExtra("sender", application.packageName)
+                })
+
+                isRegistered = true
             }
-            application.sendBroadcast(Intent(YAMFManager.ACTION_GET_LAUNCHER_CONFIG).apply {
-                `package` = "android"
-                putExtra("sender", application.packageName)
-            })
         }
     }
 

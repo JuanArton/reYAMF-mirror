@@ -62,4 +62,7 @@
     <string name="sidebar_position">右置侧边栏</string>
     <string name="app_added_to_sidebar">App added to sidebar</string>
     <string name="super_description">Super</string>
+    <string name="animation_speed">Animation Speed</string>
+    <string name="default_speed">Default</string>
+    <string name="_300">300</string>
 </resources>

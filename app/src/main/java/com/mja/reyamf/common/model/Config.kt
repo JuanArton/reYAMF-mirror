@@ -34,7 +34,8 @@ data class Config(
     var enableSidebar: Boolean = true,
     var sidebarTransparency: Int = 80,
     var windowRoundedCorner: Int = 20,
-    var sidebarPosition: Boolean = false //false=left, true=right
+    var sidebarPosition: Boolean = false,
+    var animationSpeed: Float = 5100f
 ) {
     data class HookLauncher(
         var hookRecents: Boolean = true,

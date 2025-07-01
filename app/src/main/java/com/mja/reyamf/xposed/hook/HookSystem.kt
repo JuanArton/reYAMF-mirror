@@ -3,6 +3,7 @@ package com.mja.reyamf.xposed.hook
 import android.content.Intent
 import android.content.pm.IPackageManager
 import android.os.Build
+import android.util.Log
 import com.github.kyuubiran.ezxhelper.init.EzXHelperInit
 import com.github.kyuubiran.ezxhelper.utils.findMethod
 import com.github.kyuubiran.ezxhelper.utils.hookAfter
@@ -63,14 +64,8 @@ class HookSystem : IXposedHookZygoteInit, IXposedHookLoadPackage {
              YAMFManager.systemReady()
              log(TAG, "system ready")
          }
-
-        val targetClasses = listOf(
-            "com.android.server.am.ActivityManagerService",
-            "com.android.server.am.BroadcastController"
-        )
-
         runCatching {
-            findMethod(targetClasses[0]) {
+            findMethod("com.android.server.am.ActivityManagerService") {
                 name == "checkBroadcastFromSystem"
             }.hookBefore {
                 val intent = it.args[0] as Intent
@@ -82,7 +77,7 @@ class HookSystem : IXposedHookZygoteInit, IXposedHookLoadPackage {
         }
 
         runCatching {
-            findMethod(targetClasses[1]) {
+            findMethod("com.android.server.am.BroadcastController") {
                 name == "checkBroadcastFromSystem"
             }.hookBefore {
                 val intent = it.args[0] as Intent
@@ -92,16 +87,5 @@ class HookSystem : IXposedHookZygoteInit, IXposedHookLoadPackage {
         }.onFailure {
             log(TAG, "BroadcastController checkBroadcastFromSystem fail")
         }
-
-
-//        targetClasses.firstNotNullOfOrNull { className ->
-//            runCatching {
-//                findMethod(className) { name == "checkBroadcastFromSystem" }
-//            }.getOrNull()
-//        }?.hookBefore {
-//            val intent = it.args[0] as Intent
-//            if (intent.action == HookLauncher.ACTION_RECEIVE_LAUNCHER_CONFIG)
-//                it.result = Unit
-//        }
     }
 }

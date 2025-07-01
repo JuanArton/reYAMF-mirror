@@ -1,10 +1,5 @@
 package com.mja.reyamf.manager.sidebar
 
-import android.app.AlarmManager
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Resources
@@ -12,19 +7,17 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.os.IBinder
-import android.os.SystemClock
 import android.util.Log
 import android.view.Display
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.Surface
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.LinearLayout
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.app.NotificationCompat
 import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleService
@@ -39,7 +32,7 @@ import com.mja.reyamf.R
 import com.mja.reyamf.common.gson
 import com.mja.reyamf.common.model.AppInfo
 import com.mja.reyamf.common.runMain
-import com.mja.reyamf.databinding.SidebarLayoutBinding
+import com.mja.reyamf.databinding.SidebarMenuLayoutBinding
 import com.mja.reyamf.manager.adapter.SideBarAdapter
 import com.mja.reyamf.manager.adapter.VerticalSpaceItemDecoration
 import com.mja.reyamf.manager.applist.AppListWindow
@@ -52,9 +45,7 @@ import com.mja.reyamf.xposed.utils.componentName
 import com.mja.reyamf.xposed.utils.dpToPx
 import com.mja.reyamf.xposed.utils.vibratePhone
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -72,17 +63,9 @@ class SidebarMenuService() : LifecycleService() {
     lateinit var iReyamfRepository: IReyamfRepository
 
     lateinit var config: YAMFConfig
-    private lateinit var binding: SidebarLayoutBinding
+    private lateinit var binding: SidebarMenuLayoutBinding
     private lateinit var params : WindowManager.LayoutParams
     private lateinit var windowManager: WindowManager
-
-    private var initialX: Int = 0
-    private var initialY: Int = 0
-    private var initialTouchX: Float = 0.toFloat()
-    private var initialTouchY: Float = 0.toFloat()
-    private var job: Job? = null
-    private var movable = false
-    private var swipeX = 0
 
     var userId = 0
     private lateinit var rvAdapter: SideBarAdapter
@@ -93,7 +76,6 @@ class SidebarMenuService() : LifecycleService() {
 
     private val _showApp: MutableLiveData<List<AppInfo>> = MutableLiveData()
     private val showApp: LiveData<List<AppInfo>> = _showApp
-    private var isAnimating = false
 
     private var isServiceRunning = false
 
@@ -102,48 +84,25 @@ class SidebarMenuService() : LifecycleService() {
         return null
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
+    override fun onCreate() {
+        super.onCreate()
 
-        if (intent != null) {
-            when (intent.action) {
-                Action.START.name -> {
-                    if (!isServiceRunning) {
-                        isServiceRunning = true
-                        initSidebar()
-                    }
-                }
-                Action.STOP.name -> stopService()
-                else -> Log.d("reYAMF", "No action in received intent")
-            }
-        } else {
-            Log.d("reYAMF", "Null intent")
+        if (!isServiceRunning) {
+            isServiceRunning = true
+            initSidebar()
         }
-        return START_STICKY
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent) {
-        val restartServiceIntent = Intent(applicationContext, SidebarMenuService::class.java).also {
-            it.setPackage(packageName)
-        }
-
-        val restartServicePendingIntent: PendingIntent = PendingIntent.getService(this, 1, restartServiceIntent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
-        applicationContext.getSystemService(ALARM_SERVICE)
-        val alarmService: AlarmManager = applicationContext.getSystemService(ALARM_SERVICE) as AlarmManager
-        alarmService.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000, restartServicePendingIntent)
     }
 
     private fun initSidebar() {
         val themedContext = ContextThemeWrapper(this, R.style.Theme_Reyamf)
         val inflater = LayoutInflater.from(themedContext)
-        binding = SidebarLayoutBinding.inflate(inflater)
+        binding = SidebarMenuLayoutBinding.inflate(inflater)
 
         config = gson.fromJson(YAMFManagerProxy.configJson, YAMFConfig::class.java)
 
         params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
@@ -175,14 +134,6 @@ class SidebarMenuService() : LifecycleService() {
 
         cardBgColor = binding.cvSideBarMenu.cardBackgroundColor
 
-        colorString = if (config.sidebarTransparency == 100) {
-            "#AAAAAA"
-        } else {
-            val alpha = (config.sidebarTransparency * 255 / 100)
-            val alphaHex = String.format("%02X", alpha)
-            "#${alphaHex}AAAAAA"
-        }
-
         showApp.observe(this) { sidebarApp ->
             val receivedApps = mutableListOf<AppInfo>()
             YAMFManagerProxy.getAppListAsync(object : IAppListCallback.Stub() {
@@ -208,40 +159,15 @@ class SidebarMenuService() : LifecycleService() {
         }
 
         handleSidebar()
-
-        setServiceState(this, ServiceState.STARTED)
-        startForeground(SERVICE_NOTIFICATION_ID, createNotification())
     }
 
     private fun handleSidebar() {
-        binding.clickMask.setOnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    storeTouchs(event)
-                    true
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    moveSidebar(event)
-                    true
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    openApp(event)
-                    v.performClick()
-                    true
-                }
-
-                else -> false
-            }
-        }
 
         binding.ivExtraTool.setOnClickListener {
             hideMenu()
         }
 
         binding.cvSideBarMenu.post {
-            binding.cvSideBarMenu.setCardBackgroundColor(colorString.toColorInt())
             if (config.sidebarPosition) {
                 binding.root.layoutDirection = View.LAYOUT_DIRECTION_RTL
                 binding.rvSideBarMenu.layoutDirection = View.LAYOUT_DIRECTION_LTR
@@ -255,7 +181,7 @@ class SidebarMenuService() : LifecycleService() {
         }
 
         binding.root.setOnClickListener {
-            if (isAnimating) hideMenu()
+            hideMenu()
         }
 
         binding.ibAppList.setOnClickListener {
@@ -271,29 +197,18 @@ class SidebarMenuService() : LifecycleService() {
         }
 
         binding.ibKillSidebar.setOnClickListener {
-            stopService()
-        }
-
-        binding.clickMask.setOnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    storeTouchs(event)
-                    true
+            try {
+                windowManager.removeView(binding.root)
+                stopSelf()
+                Intent(this, SidebarService::class.java).also {
+                    it.action = Action.STOP.name
+                    Log.d("reYAMF", "Starting the service in >=26 Mode from a BroadcastReceiver")
+                    this.startForegroundService(it)
                 }
-
-                MotionEvent.ACTION_MOVE -> {
-                    moveSidebar(event)
-                    true
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    openApp(event)
-                    v.performClick()
-                    true
-                }
-
-                else -> false
+            } catch (e: Exception) {
+                Log.d("reYAMF", "Sidebar killed")
             }
+            setServiceState(this, ServiceState.STOPPED)
         }
 
         binding.root.addOnLayoutChangeListener {  _, _, _, _, _, _, _, _, _ ->
@@ -348,106 +263,33 @@ class SidebarMenuService() : LifecycleService() {
         if (binding.rvSideBarMenu.itemDecorationCount == 0) {
             binding.rvSideBarMenu.addItemDecoration(VerticalSpaceItemDecoration(8.dpToPx().toInt()))
         }
-    }
 
-    private fun openApp(event: MotionEvent): Boolean {
-        job?.cancel()
-        movable = false
-        if (initialTouchY == event.rawY) {
-            vibratePhone(this)
-            showMenu()
-            isShown = false
-        }
-
-        if (swipeX > 200) {
-            vibratePhone(this)
-            showMenu()
-            isShown = false
-            swipeX = 0
-        }
-        return true
-    }
-
-    private fun moveSidebar(event: MotionEvent): Boolean {
-        swipeX = event.rawX.toInt()
-        params.y = initialY + (event.rawY - initialTouchY).toInt()
-
-        if (movable) {
-            windowManager.updateViewLayout(binding.root, params)
-
-            val displayManager = getSystemService(DISPLAY_SERVICE) as DisplayManager
-            val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
-
-            display?.let {
-                when (it.rotation) {
-                    Surface.ROTATION_0, Surface.ROTATION_180 -> {
-                        config.portraitY = params.y
-                    }
-                    Surface.ROTATION_90, Surface.ROTATION_270 -> {
-                        config.landscapeY = params.y
-                    }
-                }
-            }
-
-            YAMFManagerProxy.updateConfig(gson.toJson(config))
-            config = gson.fromJson(YAMFManagerProxy.configJson, YAMFConfig::class.java)
-        }
-        return true
-    }
-
-
-    private fun storeTouchs(event: MotionEvent): Boolean {
-        startCounter()
-        initialX = params.x
-        initialY = params.y
-        initialTouchX = (event.rawX)
-        initialTouchY = (event.rawY)
-        return true
-    }
-
-    private fun startCounter() {
-        job = CoroutineScope(Dispatchers.IO).launch {
-            delay(200)
-            movable = true
-            vibratePhone(this@SidebarMenuService)
-        }
+        showMenu()
     }
 
     private fun showMenu() {
-        isAnimating = true
         if (!isShown) {
             isShown = true
             binding.root.elevation = 8.dpToPx()
 
-            binding.cvSideBarMenu.setCardBackgroundColor(Color.TRANSPARENT)
             binding.cvSideBarMenu.strokeWidth = 1.dpToPx().toInt()
+            binding.cvExtraTool.strokeWidth = 1.dpToPx().toInt()
 
-            binding.clickMask.visibility = View.GONE
-            binding.cvSideBarMenu.setCardBackgroundColor(cardBgColor.defaultColor)
-
-            val params = binding.root.layoutParams
-            params.width = ViewGroup.LayoutParams.MATCH_PARENT
-            params.height = ViewGroup.LayoutParams.MATCH_PARENT
-            binding.root.layoutParams = params
-
-            val layout = binding.test
+            val layout = binding.llSidebarMenu
             val params1 = layout.layoutParams as ConstraintLayout.LayoutParams
             val position = if (orientation == 0) config.portraitY else config.landscapeY
             params1.topMargin =
                 (Resources.getSystem().displayMetrics.heightPixels/2 + position) - 75.dpToPx().toInt()
             layout.layoutParams = params1
 
-            lifecycleScope.launch {
-                delay(200)
-                animateResize(
-                    binding.cvSideBarMenu,
-                    3.dpToPx().toInt(), 70.dpToPx().toInt(),
-                    75.dpToPx().toInt(), 350.dpToPx().toInt(), this@SidebarMenuService
-                ) {
-                    binding.sideBarMenu.visibility = View.VISIBLE
-                    animateAlpha(binding.rvSideBarMenu, 0F, 1F)
-                    getSidebarApp()
-                }
+            animateResize(
+                binding.cvSideBarMenu,
+                3.dpToPx().toInt(), 70.dpToPx().toInt(),
+                75.dpToPx().toInt(), 350.dpToPx().toInt(), this@SidebarMenuService
+            ) {
+                binding.sideBarMenu.visibility = View.VISIBLE
+                animateAlpha(binding.rvSideBarMenu, 0F, 1F)
+                getSidebarApp()
             }
         }
     }
@@ -467,54 +309,27 @@ class SidebarMenuService() : LifecycleService() {
                     350.dpToPx().toInt(), 75.dpToPx().toInt(), this
                 ) {
                     binding.sideBarMenu.visibility = View.GONE
-                    binding.clickMask.visibility = View.VISIBLE
                     binding.cvSideBarMenu.setCardBackgroundColor(colorString.toColorInt())
                     binding.cvSideBarMenu.strokeWidth = 0
                     binding.cvSideBarMenu.visibility = View.INVISIBLE
 
-                    val params = binding.root.layoutParams
-                    params.width = ViewGroup.LayoutParams.WRAP_CONTENT
-                    params.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    binding.root.layoutParams = params
-
-                    val layout = binding.test
-                    val params1 = layout.layoutParams as ConstraintLayout.LayoutParams
-                    params1.topMargin = 0
-                    layout.layoutParams = params1
-
-                    lifecycleScope.launch {
-                        delay(400)
-                        binding.cvSideBarMenu.visibility = View.VISIBLE
-                    }
+                    binding.cvSideBarMenu.visibility = View.VISIBLE
+                    stopService()
                 }
             }
         } else {
-
             animateResize(
                 binding.cvSideBarMenu,
                 70.dpToPx().toInt(), 3.dpToPx().toInt(),
                 350.dpToPx().toInt(), 75.dpToPx().toInt(), this
             ) {
                 binding.sideBarMenu.visibility = View.GONE
-                binding.clickMask.visibility = View.VISIBLE
                 binding.cvSideBarMenu.setCardBackgroundColor(colorString.toColorInt())
                 binding.cvSideBarMenu.strokeWidth = 0
                 binding.cvSideBarMenu.visibility = View.INVISIBLE
 
-                val params = binding.root.layoutParams
-                params.width = ViewGroup.LayoutParams.WRAP_CONTENT
-                params.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                binding.root.layoutParams = params
-
-                val layout = binding.test
-                val params1 = layout.layoutParams as ConstraintLayout.LayoutParams
-                params1.topMargin = 0
-                layout.layoutParams = params1
-
-                lifecycleScope.launch {
-                    delay(400)
-                    binding.cvSideBarMenu.visibility = View.VISIBLE
-                }
+                binding.cvSideBarMenu.visibility = View.VISIBLE
+                stopService()
             }
         }
     }
@@ -528,27 +343,16 @@ class SidebarMenuService() : LifecycleService() {
         }
     }
 
-    private fun createNotification(): Notification {
-        val channelId = SERVICE_NOTIF_CHANNEL_ID
-        val channel = NotificationChannel(
-            channelId,
-            "reYAMF Sidebar Service",
-            NotificationManager.IMPORTANCE_LOW
-        )
-        val manager = getSystemService(NotificationManager::class.java)
-        manager?.createNotificationChannel(channel)
-
-        return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Sidebar Service Running")
-            .setContentText("reYAMF Sidebar Service")
-            .build()
-    }
-
     private fun stopService() {
         try {
             windowManager.removeView(binding.root)
-            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
+            Intent(this, SidebarService::class.java).also {
+                it.action = Action.START.name
+                Log.d("reYAMF", "Starting the service in >=26 Mode from a BroadcastReceiver")
+                this.startForegroundService(it)
+                return
+            }
         } catch (e: Exception) {
             Log.d("reYAMF", "Sidebar killed")
         }

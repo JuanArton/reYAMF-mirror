@@ -123,6 +123,7 @@ class AppWindow(
     private var isResize: Boolean = true
     private var orientation = 0
     private var params = WindowManager.LayoutParams()
+    private lateinit var backgroundView: View
 
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -200,7 +201,6 @@ class AppWindow(
         }
 
         params.apply {
-
             if (orientation == 0) {
                 gravity = Gravity.CENTER
                 y = -80.dpToPx().toInt()

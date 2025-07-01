@@ -25,12 +25,13 @@
         <service
             android:name=".manager.sidebar.SidebarService"
             android:enabled="true"
-            android:exported="true" >
+            android:exported="true"
+            android:foregroundServiceType="specialUse" >
         </service>
-        <service
-            android:name=".manager.services.Window"
-            android:enabled="true"
-            android:exported="true" />
+<!--        <service-->
+<!--            android:name=".manager.services.Window"-->
+<!--            android:enabled="true"-->
+<!--            android:exported="true" />-->
         <service
             android:name=".manager.applist.AppListWindow"
             android:enabled="true"
@@ -38,8 +39,7 @@
         <service
             android:name=".manager.sidebar.SidebarMenuService"
             android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="specialUse" />
+            android:exported="true" />
 
         <activity
             android:name=".manager.ui.setting.SettingActivity"
