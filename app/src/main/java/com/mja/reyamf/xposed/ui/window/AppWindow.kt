@@ -58,6 +58,7 @@ import com.mja.reyamf.R
 import com.mja.reyamf.common.getAttr
 import com.mja.reyamf.common.onException
 import com.mja.reyamf.common.runMain
+import com.mja.reyamf.databinding.BackgroundViewBinding
 import com.mja.reyamf.databinding.WindowAppBinding
 import com.mja.reyamf.xposed.services.YAMFManager
 import com.mja.reyamf.xposed.services.YAMFManager.config
@@ -92,6 +93,7 @@ class AppWindow(
     }
 
     lateinit var binding: WindowAppBinding
+    lateinit var bindingBg: BackgroundViewBinding
     private lateinit var virtualDisplay: VirtualDisplay
     private val taskStackListener =
         ITaskStackListenerProxy.newInstance(context.classLoader) { args, method ->
@@ -123,7 +125,7 @@ class AppWindow(
     private var isResize: Boolean = true
     private var orientation = 0
     private var params = WindowManager.LayoutParams()
-    private lateinit var backgroundView: View
+    private var paramsBg = WindowManager.LayoutParams()
 
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -151,6 +153,7 @@ class AppWindow(
     init {
         runCatching {
             binding = WindowAppBinding.inflate(LayoutInflater.from(context))
+            bindingBg = BackgroundViewBinding.inflate(LayoutInflater.from(context))
         }.onException { e ->
             Log.e(TAG, "Failed to create new window, did you reboot?", e)
             TipUtil.showToast("Failed to create new window, did you reboot?")
@@ -213,8 +216,51 @@ class AppWindow(
 //            privateFlags = privateFlags or WindowLayoutParamsHidden.PRIVATE_FLAG_IS_ROUNDED_CORNERS_OVERLAY
         }
 
+        paramsBg = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or
+                    WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM,
+            PixelFormat.TRANSLUCENT
+        )
+        paramsBg.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+
+        bindingBg.root.let {
+            Instances.windowManager.addView(bindingBg.root, paramsBg)
+        }
+
         binding.root.let { layout ->
             Instances.windowManager.addView(layout, params)
+        }
+
+        bindingBg.root.setOnClickListener {
+            bindingBg.root.visibility = View.GONE
+            binding.viewBackGestureBuffer.visibility = View.VISIBLE
+        }
+
+//        binding.viewBackGestureBuffer.setOnTouchListener(object : View.OnTouchListener {
+//            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+//                when (event?.action) {
+//                    MotionEvent.ACTION_DOWN -> {
+//                        bindingBg.root.visibility = View.VISIBLE
+//                        binding.viewBackGestureBuffer.visibility = View.GONE
+//                    }
+//                    else -> return false
+//                }
+//                return true
+//            }
+//        })
+
+        binding.viewBackGestureBuffer.setOnClickListener {
+            bindingBg.root.visibility = View.VISIBLE
+            this.invokeMethod("setDisplayId", args(displayId), argTypes(Integer.TYPE))
+            binding.viewBackGestureBuffer.visibility = View.GONE
         }
 
         binding.rootClickMask.setOnTouchListener { _, event ->
@@ -468,6 +514,7 @@ class AppWindow(
         YAMFManager.removeWindow(displayId)
         virtualDisplay.release()
         Instances.windowManager.removeView(binding.root)
+        Instances.windowManager.removeView(bindingBg.root)
     }
 
     private fun getTopRootTask(): ActivityTaskManager.RootTaskInfo? {
@@ -479,6 +526,10 @@ class AppWindow(
     }
 
     private fun moveToTop() {
+        Instances.windowManager.removeView(bindingBg.root)
+        Instances.windowManager.addView(bindingBg.root, bindingBg.root.layoutParams)
+        binding.viewBackGestureBuffer.visibility = View.GONE
+
         Instances.windowManager.removeView(binding.root)
         Instances.windowManager.addView(binding.root, binding.root.layoutParams)
         YAMFManager.moveToTop(displayId)
@@ -682,6 +733,8 @@ class AppWindow(
                 ){
                     setBackgroundWrapContent()
                     setParrentWrapContent()
+                    bindingBg.root.visibility = View.VISIBLE
+                    binding.viewBackGestureBuffer.visibility = View.GONE
                 }
             }
 
@@ -717,6 +770,7 @@ class AppWindow(
                     context
                 ){
                     isResize = true
+                    bindingBg.root.visibility = View.GONE
                 }
             }
 
@@ -748,12 +802,14 @@ class AppWindow(
         if (isCollapsed) {
             binding.rootClickMask.visibility = View.GONE
             expandWindow()
+            bindingBg.root.visibility = View.VISIBLE
+            binding.viewBackGestureBuffer.visibility = View.GONE
         } else {
             binding.rootClickMask.visibility = View.VISIBLE
             binding.rlBarControllerBottom.visibility = View.GONE
             binding.rlBarControllerSide.visibility = View.GONE
-
             collapseWindow()
+            bindingBg.root.visibility = View.GONE
         }
     }
 
